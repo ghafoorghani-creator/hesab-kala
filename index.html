@@ -1,0 +1,56 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f766e"><link rel="manifest" href="manifest.json">
+<title>حساب کالای من</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;background:#f4f6f8;color:#17202a}
+header{background:#0f766e;color:#fff;padding:20px 16px}h1{font-size:23px;margin:0 0 5px}.sub{opacity:.85;font-size:13px}
+nav{display:flex;gap:6px;padding:8px;background:#fff;position:sticky;top:0;z-index:2;overflow:auto}nav button{border:0;background:#eef2f3;padding:10px 13px;border-radius:10px;white-space:nowrap}nav button.active{background:#0f766e;color:#fff}
+main{padding:12px;max-width:720px;margin:auto}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 5px #0001}.kpi{font-size:21px;font-weight:700;margin-top:6px}.label,.muted{font-size:12px;color:#667085}
+input,select{width:100%;padding:12px;border:1px solid #d7dde2;border-radius:10px;font-size:15px;margin:5px 0 10px;background:#fff}.row{display:flex;gap:8px}.row>*{flex:1}
+button.primary{background:#0f766e;color:#fff;border:0;border-radius:11px;padding:12px 16px;font-size:15px}.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:9px;padding:8px 12px}
+.hidden{display:none}.section-title{font-size:17px;font-weight:700;margin-bottom:12px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:8px;border-bottom:1px solid #eee;text-align:right}.profit{color:#087443}.loss{color:#b42318}
+</style></head><body>
+<header><h1>حساب کالای من</h1><div class="sub">خرید • فروش • مصارف • سود ناخالص • سود خالص • موجودی</div></header>
+<nav><button class="active" onclick="show('dash',this)">داشبورد</button><button onclick="show('buy',this)">خرید</button><button onclick="show('sell',this)">فروش</button><button onclick="show('expense',this)">مصارف</button><button onclick="show('products',this)">کالاها</button></nav>
+<main>
+<section id="dash"><div class="grid">
+<div class="card"><div class="label">کل فروش</div><div id="sales" class="kpi">0</div></div>
+<div class="card"><div class="label">سود ناخالص</div><div id="gross" class="kpi profit">0</div></div>
+<div class="card"><div class="label">کل مصارف</div><div id="expenses" class="kpi">0</div></div>
+<div class="card"><div class="label">سود خالص</div><div id="net" class="kpi profit">0</div></div></div>
+<div class="card"><div class="label">ارزش موجودی به قیمت خرید</div><div id="stockValue" class="kpi">0</div></div>
+<div class="card"><div class="section-title">خلاصه</div><div id="summary" class="muted"></div></div></section>
+
+<section id="buy" class="hidden"><div class="card"><div class="section-title">ثبت خرید</div>
+<input id="bname" placeholder="نام کالا"><div class="row"><input id="bqty" type="number" placeholder="تعداد"><input id="bprice" type="number" placeholder="قیمت خرید واحد"></div>
+<input id="bextra" type="number" placeholder="هزینه انتقال و جانبی"><button class="primary" onclick="addBuy()">ثبت خرید</button></div></section>
+
+<section id="sell" class="hidden"><div class="card"><div class="section-title">ثبت فروش</div>
+<select id="sproduct"></select><div class="row"><input id="sqty" type="number" placeholder="تعداد فروش"><input id="sprice" type="number" placeholder="قیمت فروش واحد"></div>
+<button class="primary" onclick="addSell()">ثبت فروش</button></div></section>
+
+<section id="expense" class="hidden"><div class="card"><div class="section-title">ثبت مصرف</div>
+<input id="ename" placeholder="عنوان مصرف (کرایه، برق، بسته‌بندی...)"><input id="eamount" type="number" placeholder="مبلغ">
+<button class="primary" onclick="addExpense()">ثبت مصرف</button></div></section>
+
+<section id="products" class="hidden"><div class="card"><div class="section-title">موجودی کالا</div><div id="ptable"></div></div>
+<div class="card"><button class="danger" onclick="resetAll()">حذف تمام اطلاعات</button></div></section>
+</main>
+<script>
+const KEY="hesab_kala_v1";let db=JSON.parse(localStorage.getItem(KEY)||'{"products":{},"sales":[],"expenses":[],"purchases":[]}');
+const money=n=>Number(n||0).toLocaleString("fa-AF")+" افغانی";
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function show(id,btn){document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");render()}
+function addBuy(){let n=bname.value.trim(),q=+bqty.value,p=+bprice.value,e=+bextra.value||0;if(!n||q<=0||p<0)return alert("نام کالا، تعداد و قیمت خرید را وارد کنید.");if(!db.products[n])db.products[n]={buy:0,stock:0,cost:0,sold:0};let x=db.products[n],unit=(q*p+e)/q;x.cost=x.stock?((x.stock*x.cost)+(q*unit))/(x.stock+q):unit;x.stock+=q;x.buy+=q;db.purchases.push({n,q,p,e,date:Date.now()});save();bname.value=bqty.value=bprice.value=bextra.value="";alert("خرید ثبت شد.")}
+function addSell(){let n=sproduct.value,q=+sqty.value,p=+sprice.value;if(!n||q<=0||p<0)return alert("کالا، تعداد و قیمت فروش را وارد کنید.");let x=db.products[n];if(!x||x.stock<q)return alert("موجودی کافی نیست.");x.stock-=q;x.sold+=q;db.sales.push({n,q,p,cost:x.cost,date:Date.now()});save();sqty.value=sprice.value="";alert("فروش ثبت شد.")}
+function addExpense(){let n=ename.value.trim(),a=+eamount.value;if(!n||a<=0)return alert("عنوان و مبلغ را وارد کنید.");db.expenses.push({n,a,date:Date.now()});save();ename.value=eamount.value="";alert("مصرف ثبت شد.")}
+function render(){let sales=db.sales.reduce((a,x)=>a+x.q*x.p,0),gross=db.sales.reduce((a,x)=>a+x.q*(x.p-x.cost),0),exp=db.expenses.reduce((a,x)=>a+x.a,0),net=gross-exp,stock=Object.values(db.products).reduce((a,x)=>a+x.stock*x.cost,0);
+document.getElementById("sales").textContent=money(sales);document.getElementById("gross").textContent=money(gross);document.getElementById("expenses").textContent=money(exp);document.getElementById("net").textContent=money(net);document.getElementById("stockValue").textContent=money(stock);
+document.getElementById("net").className="kpi "+(net>=0?"profit":"loss");document.getElementById("gross").className="kpi "+(gross>=0?"profit":"loss");
+document.getElementById("summary").textContent=`تعداد کالاها: ${Object.keys(db.products).length} | فروش‌ها: ${db.sales.length} | خریدها: ${db.purchases.length} | مصارف: ${db.expenses.length}`;
+document.getElementById("sproduct").innerHTML=Object.keys(db.products).map(n=>`<option>${n}</option>`).join("");
+let rows=Object.entries(db.products).map(([n,x])=>`<tr><td>${n}</td><td>${x.stock}</td><td>${money(x.cost)}</td><td>${x.sold}</td></tr>`).join("");
+document.getElementById("ptable").innerHTML=rows?`<table><tr><th>کالا</th><th>موجودی</th><th>متوسط خرید</th><th>فروش</th></tr>${rows}</table>`:"<div class='muted'>هنوز کالایی ثبت نشده است.</div>"}
+function resetAll(){if(confirm("همه اطلاعات حذف شود؟")){db={products:{},sales:[],expenses:[],purchases:[]};save()}}render();
+</script></body></html>
